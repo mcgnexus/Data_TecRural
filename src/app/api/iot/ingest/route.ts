@@ -46,8 +46,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const measuredAt = payload.measured_at ? new Date(payload.measured_at) : null;
-
     const sanitizedRaw = {
       air_temp_c: payload.air_temp_c,
       air_humidity_pct: payload.air_humidity_pct,
@@ -75,7 +73,7 @@ export async function POST(request: NextRequest) {
       )
       VALUES (
         ${node.id},
-        ${measuredAt},
+        coalesce(${payload.measured_at ?? null}::timestamptz, now()),
         ${payload.air_temp_c ?? null},
         ${payload.air_humidity_pct ?? null},
         ${payload.pressure_hpa ?? null},
@@ -86,7 +84,7 @@ export async function POST(request: NextRequest) {
         ${payload.rssi_dbm ?? null},
         ${JSON.stringify(sanitizedRaw)}::jsonb
       )
-      RETURNING id, created_at
+      RETURNING id, measured_at, created_at
     `;
 
     const reading = result[0];
@@ -95,6 +93,7 @@ export async function POST(request: NextRequest) {
       {
         ok: true,
         reading_id: reading.id,
+        measured_at: reading.measured_at,
         received_at: reading.created_at
       },
       { status: 201 }

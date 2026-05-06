@@ -79,6 +79,7 @@ Recibe datos de sensores desde el ESP32.
 {
   "ok": true,
   "reading_id": 1,
+  "measured_at": "2026-05-06T10:30:00.000Z",
   "received_at": "2026-05-06T10:30:00.123Z"
 }
 ```
@@ -164,6 +165,18 @@ curl -X POST http://localhost:3000/api/iot/ingest \
     "node_code": "TR-FITO-001",
     "token": "cambia-este-token-largo",
     "air_temp_c": 24.6
+  }'
+```
+
+4. Prueba sin `measured_at` (la API debe asignar `now()` en PostgreSQL):
+```bash
+curl -X POST http://localhost:3000/api/iot/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "node_code": "TR-FITO-001",
+    "token": "cambia-este-token-largo",
+    "air_temp_c": 24.6,
+    "air_humidity_pct": 48.2
   }'
 ```
 
