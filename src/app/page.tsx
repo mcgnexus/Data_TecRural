@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,6 +24,14 @@ export default function Home() {
               <p className="text-green-800">
                 ✅ API configurada y lista para recibir datos de ESP32
               </p>
+            </div>
+            <div className="mt-6">
+              <Link
+                href="/dashboard"
+                className="inline-block rounded-md bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700"
+              >
+                Ver Dashboard de Datos
+              </Link>
             </div>
           </div>
         </div>
