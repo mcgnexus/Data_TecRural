@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Web Design</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">Logo</div>
+            <ul class="nav-menu">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Services</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Responsive Design</h1>
+            <p>Creating adaptive layouts for all devices</p>
+            <a href="#" class="cta-button">Learn More</a>
+        </section>
+
+        <section class="features">
+            <div class="feature-card">
+                <h3>Mobile First</h3>
+                <p>Starting with mobile styles and enhancing for larger screens</p>
+            </div>
+            <div class="feature-card">
+                <h3>Flexbox & Grid</h3>
+                <p>Modern layout techniques for flexible designs</p>
+            </div>
+            <div class="feature-card">
+                <h3>Fluid Typography</h3>
+                <p>Text that scales smoothly across viewport sizes</p>
+            </div>
+        </section>
+
+        <section class="gallery">
+            <h2>Our Work</h2>
+            <div class="grid-gallery">
+                <img src="https://via.placeholder.com/400x300?text=Image+1" alt="Placeholder 1">
+                <img src="https://via.placeholder.com/400x300?text=Image+2" alt="Placeholder 2">
+                <img src="https://via.placeholder.com/400x300?text=Image+3" alt="Placeholder 3">
+                <img src="https://via.placeholder.com/400x300?text=Image+4" alt="Placeholder 4">
+                <img src="https://via.placeholder.com/400x300?text=Image+5" alt="Placeholder 5">
+                <img src="https://via.placeholder.com/400x300?text=Image+6" alt="Placeholder 6">
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Responsive Design. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Simple hamburger menu toggle for mobile
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+/* Base styles - Mobile First */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f9f9f9;
+}
+
+/* Fluid typography */
+h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+h2 {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+h3 {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+p {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+}
+
+/* Navigation */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #2c3e50;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+.nav-menu a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 0;
+    position: relative;
+}
+
+.nav-menu a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #ecf0f1;
+    transition: width 0.3s ease;
+}
+
+.nav-menu a:hover::after {
+    width: 100%;
+}
+
+/* Hamburger menu for mobile */
+.hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background-color: white;
+    transition: all 0.3s ease;
+}
+
+/* Hero section */
+.hero {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    text-align: center;
+    padding: 4rem 1rem;
+}
+
+.hero h1 {
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+    padding: 0.75rem 1.5rem;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #bdc3c7;
+    transform: translateY(-3px);
+}
+
+/* Features section */
+.features {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Gallery section */
+.gallery {
+    padding: 2rem;
+    text-align: center;
+}
+
+.gallery h2 {
+    margin-bottom: 2rem;
+}
+
+.grid-gallery {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.grid-gallery img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.grid-gallery img:hover {
+    transform: scale(1.05);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 2rem;
+    background-color: #2c3e50;
+    color: white;
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+}
+
+/* Tablet styles (768px and up) */
+@media (min-width: 768px) {
+    /* Navigation */
+    .nav-menu {
+        gap: 2.5rem;
+    }
+    
+    .hamburger {
+        display: none;
+    }
+    
+    /* Features - 2 column grid on tablet */
+    .features {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .feature-card {
+        flex: 1 1 calc(50% - 1rem);
+    }
+    
+    /* Gallery - 2 column grid */
+    .grid-gallery {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Desktop styles (1024px and up) */
+@media (min-width: 1024px) {
+    /* Navigation */
+    .nav-menu {
+        gap: 3rem;
+    }
+    
+    /* Features - 3 column grid on desktop */
+    .features {
+        gap: 2.5rem;
+    }
+    
+    .feature-card {
+        flex: 1 1 calc(33.333% - 1.67rem);
+    }
+    
+    /* Gallery - 3 column grid */
+    .grid-gallery {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    /* Increase padding for larger screens */
+    .hero, .features, .gallery {
+        padding-left: 5%;
+        padding-right: 5%;
+    }
+}
+
+/* Touch-friendly adjustments */
+@media (hover: none) and (pointer: coarse) {
+    .nav-menu a {
+        padding: 1rem;
+        font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+    }
+    
+    .cta-button {
+        padding: 1rem 2rem;
+        font-size: clamp(1rem, 2.5vw, 1.2rem);
+    }
+    
+    .feature-card {
+        padding: 2rem;
+    }
+}
