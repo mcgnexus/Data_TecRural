@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Node, SensorReading } from '@/types';
+import Icon from './Icons';
 import './dashboard.css';
 
 interface DashboardClientProps {
@@ -24,13 +25,20 @@ type MetricKey =
   | 'battery_v'
   | 'rssi_dbm';
 
+type ChartPoint = {
+  x: number;
+  y: number;
+  value: number;
+  measuredAt?: string;
+};
+
 const metrics = [
   { key: 'air_temp_c', label: 'TEMP. AIRE', icon: 'thermostat', unit: '°C', colorClass: 'primary', digits: 1, minSpan: 4 },
   { key: 'air_humidity_pct', label: 'HUMEDAD AIRE', icon: 'humidity_percentage', unit: '%', colorClass: 'tertiary', digits: 1, minSpan: 10, hardMin: 0, hardMax: 100 },
-  { key: 'pressure_hpa', label: 'PRESIÓN ATM.', icon: 'compress', unit: 'hPa', colorClass: 'neutral', digits: 1, minSpan: 20 },
+  { key: 'pressure_hpa', label: 'PRESIÓN ATM.', icon: 'barometer', unit: 'hPa', colorClass: 'neutral', digits: 1, minSpan: 20 },
   { key: 'leaf_temp_c', label: 'TEMPERATURA FOLIAR', icon: 'eco', unit: '°C', colorClass: 'primary', digits: 1, minSpan: 4 },
   { key: 'soil_moisture_pct', label: 'HUMEDAD DEL SUELO', icon: 'grass', unit: '%', colorClass: 'tertiary', digits: 1, minSpan: 15, hardMin: 0, hardMax: 100 },
-  { key: 'battery_v', label: 'VOLTAJE DE BATERÍA', icon: 'battery_charging_80', unit: 'V', colorClass: 'primary', digits: 2, minSpan: 0.8 },
+  { key: 'battery_v', label: 'VOLTAJE DE BATERÍA', icon: 'battery_std', unit: 'V', colorClass: 'primary', digits: 2, minSpan: 0.8 },
   { key: 'rssi_dbm', label: 'SEÑAL WIFI', icon: 'wifi', unit: 'dBm', colorClass: 'tertiary', digits: 0, minSpan: 20 },
 ] as const;
 
@@ -53,6 +61,16 @@ const percentage = (value: number | null | undefined, min: number, max: number) 
 const formatDateTime = (value?: string) => {
   if (!value) return 'Sin datos';
   return new Date(value).toLocaleString();
+};
+
+const formatChartTick = (value?: string) => {
+  if (!value) return '--';
+  return new Date(value).toLocaleString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const trendDelta = (readings: SensorReading[], key: MetricKey) => {
@@ -93,6 +111,7 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
   const router = useRouter();
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('air_temp_c');
   const [search, setSearch] = useState('');
+  const [hoverPoint, setHoverPoint] = useState<ChartPoint | null>(null);
   const [filterValues, setFilterValues] = useState({
     node_code: filters.node_code || '',
     start_date: filters.start_date || '',
@@ -137,23 +156,31 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
     const maxValue = values.length ? Math.max(...values) : 1;
     const { domainMin, domainMax } = buildYAxisDomain(minValue, maxValue, selectedMetricConfig);
     const yRange = domainMax - domainMin || 1;
-    const points = chartReadings
-      .map((reading, index) => {
-        const x = chartReadings.length <= 1 ? 50 : (index / (chartReadings.length - 1)) * 100;
-        const value = reading[selectedMetric] as number;
-        const y = 92 - ((value - domainMin) / yRange) * 84;
-        return `${x},${y}`;
-      })
-      .join(' ');
+    const pointList = chartReadings.map((reading, index) => {
+      const x = chartReadings.length <= 1 ? 50 : 4 + (index / (chartReadings.length - 1)) * 92;
+      const value = reading[selectedMetric] as number;
+      const y = 88 - ((value - domainMin) / yRange) * 76;
+      return { x, y, value, measuredAt: reading.measured_at };
+    });
+    const points = pointList.map((point) => `${point.x},${point.y}`).join(' ');
+    const latestPoint = pointList[pointList.length - 1] || null;
+    const midReading = chartReadings[Math.floor((chartReadings.length - 1) / 2)];
+    const xTicks = chartReadings.length
+      ? [chartReadings[0], midReading, chartReadings[chartReadings.length - 1]].map((reading) => formatChartTick(reading?.measured_at))
+      : ['--', '--', '--'];
 
     return {
       points,
-      area: points ? `0,100 ${points} 100,100` : '',
+      area: pointList.length > 1 ? `4,94 ${points} 96,94` : '',
+      pointList,
+      latestPoint,
+      xTicks,
       minValue,
       maxValue,
       domainMin,
       domainMax,
       midValue: domainMin + yRange / 2,
+      count: values.length,
     };
   }, [chartReadings, selectedMetric, selectedMetricConfig]);
 
@@ -175,6 +202,18 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
   const clearFilters = () => {
     setFilterValues({ node_code: '', start_date: '', end_date: '' });
     router.push('/dashboard');
+  };
+
+  const handleChartHover = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (chartData.pointList.length === 0) return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+    const nearest = chartData.pointList.reduce((closest, point) =>
+      Math.abs(point.x - x) < Math.abs(closest.x - x) ? point : closest,
+    );
+
+    setHoverPoint(nearest);
   };
 
   const exportCsv = () => {
@@ -224,10 +263,10 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
         </div>
 
         <nav className="sidebar-nav" aria-label="Navegación">
-          <a className="active" href="#dashboard"><span className="material-symbols-outlined">dashboard</span>Dashboard</a>
-          <a href="#sensores"><span className="material-symbols-outlined">sensors</span>Sensores</a>
-          <a href="#analisis"><span className="material-symbols-outlined">trending_up</span>Análisis</a>
-          <a href="#datos"><span className="material-symbols-outlined">description</span>Datos</a>
+          <a className="active" href="#dashboard"><Icon name="dashboard" />Dashboard</a>
+          <a href="#sensores"><Icon name="sensors" />Sensores</a>
+          <a href="#analisis"><Icon name="trending_up" />Análisis</a>
+          <a href="#datos"><Icon name="description" />Datos</a>
         </nav>
 
         <button className="export-button" type="button" onClick={exportCsv}>Exportar Datos</button>
@@ -236,7 +275,7 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
       <main className="agro-main" id="dashboard">
         <header className="agro-topbar">
           <div className="search-box">
-            <span className="material-symbols-outlined">search</span>
+            <Icon name="search" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -245,9 +284,9 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
             />
           </div>
           <div className="topbar-actions">
-            <span className="status-pill"><i /> Sistema online</span>
-            <button type="button"><span className="material-symbols-outlined">notifications</span></button>
-            <button type="button"><span className="material-symbols-outlined">settings</span></button>
+            <span className="status-pill">Sistema online</span>
+            <button type="button"><Icon name="notifications" /></button>
+            <button type="button"><Icon name="settings" /></button>
           </div>
         </header>
 
@@ -294,11 +333,12 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
                   <p>TEMP. AIRE</p>
                   <strong className="display-data primary-text">{formatNumber(latest?.air_temp_c)}<span>°C</span></strong>
                 </div>
-                <span className="material-symbols-outlined icon-chip primary-chip">thermostat</span>
+                <Icon name="thermostat" className="icon-chip primary-chip" />
               </div>
               <div className="spark-bars">
                 {recentBars('air_temp_c', 10, 40).map((height, index) => <i key={index} style={{ height: `${Math.max(height, 8)}%` }} />)}
               </div>
+              <span className="spark-label">Tendencia reciente</span>
             </article>
 
             <article className="metric-card span-4">
@@ -307,11 +347,12 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
                   <p>HUMEDAD AIRE</p>
                   <strong className="display-data tertiary-text">{formatNumber(latest?.air_humidity_pct)}<span>%</span></strong>
                 </div>
-                <span className="material-symbols-outlined icon-chip tertiary-chip">humidity_percentage</span>
+                <Icon name="humidity_percentage" className="icon-chip tertiary-chip" />
               </div>
               <div className="spark-bars tertiary-bars">
                 {recentBars('air_humidity_pct', 0, 100).map((height, index) => <i key={index} style={{ height: `${Math.max(height, 8)}%` }} />)}
               </div>
+              <span className="spark-label">Tendencia reciente</span>
             </article>
 
             <article className="metric-card span-4">
@@ -320,11 +361,12 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
                   <p>PRESIÓN ATM.</p>
                   <strong className="display-data neutral-text">{formatNumber(latest?.pressure_hpa, 1)}<span> hPa</span></strong>
                 </div>
-                <span className="material-symbols-outlined icon-chip neutral-chip">compress</span>
+                <Icon name="barometer" className="icon-chip neutral-chip" />
               </div>
               <div className="spark-bars neutral-bars">
                 {recentBars('pressure_hpa', 800, 1100).map((height, index) => <i key={index} style={{ height: `${Math.max(height, 8)}%` }} />)}
               </div>
+              <span className="spark-label">Tendencia reciente</span>
             </article>
 
             <div className="section-label plant">Sección Planta/Suelo</div>
@@ -332,7 +374,7 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
             <article className="metric-card span-6 feature-card primary-edge">
               <div className="metric-head">
                 <div>
-                  <div className="label-with-icon"><span className="material-symbols-outlined">eco</span><p>TEMPERATURA FOLIAR</p></div>
+                  <div className="label-with-icon"><Icon name="eco" /><p>TEMPERATURA FOLIAR</p></div>
                   <strong className="display-data">{formatNumber(latest?.leaf_temp_c)}<span>°C</span></strong>
                 </div>
                 <div className="trend-box">
@@ -351,7 +393,7 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
             <article className="metric-card span-6 feature-card tertiary-edge">
               <div className="metric-head">
                 <div>
-                  <div className="label-with-icon"><span className="material-symbols-outlined">grass</span><p>HUMEDAD DEL SUELO</p></div>
+                  <div className="label-with-icon"><Icon name="grass" /><p>HUMEDAD DEL SUELO</p></div>
                   <strong className="display-data">{formatNumber(latest?.soil_moisture_pct)}<span>%</span></strong>
                 </div>
                 <div className="trend-box">
@@ -374,7 +416,7 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
                   <circle className="ring-fg" cx="18" cy="18" fill="none" r="16" strokeDasharray="100" strokeDashoffset={100 - batteryPercent} strokeWidth="3" />
                 </svg>
                 <div>
-                  <span className="material-symbols-outlined">battery_charging_80</span>
+                  <Icon name="battery_std" />
                   <strong>{batteryPercent.toFixed(0)}%</strong>
                 </div>
               </div>
@@ -393,38 +435,59 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
               <span>Calidad señal estimada: {rssiPercent.toFixed(0)}%</span>
             </article>
 
-            <article className="chart-card span-12" id="analisis">
+            <article className={`chart-card span-12 ${selectedMetricConfig.colorClass}-chart`} id="analisis">
               <div className="chart-heading">
                 <div>
                   <p>ANÁLISIS TEMPORAL</p>
                   <h3>{selectedMetricConfig.label}</h3>
                 </div>
-                <select value={selectedMetric} onChange={(event) => setSelectedMetric(event.target.value as MetricKey)}>
-                  {metrics.map((metric) => <option key={metric.key} value={metric.key}>{metric.label}</option>)}
-                </select>
+                <div className="chart-controls">
+                  <span className="chart-current">
+                    Último: {chartData.latestPoint ? formatNumber(chartData.latestPoint.value, selectedMetricConfig.digits) : '--'} {selectedMetricConfig.unit}
+                  </span>
+                  <select value={selectedMetric} onChange={(event) => setSelectedMetric(event.target.value as MetricKey)}>
+                    {metrics.map((metric) => <option key={metric.key} value={metric.key}>{metric.label}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="chart-layout">
                 <div className="y-axis">
-                  <span>{chartData.domainMax.toFixed(selectedMetricConfig.digits)} {selectedMetricConfig.unit}</span>
-                  <span>{chartData.midValue.toFixed(selectedMetricConfig.digits)} {selectedMetricConfig.unit}</span>
-                  <span>{chartData.domainMin.toFixed(selectedMetricConfig.digits)} {selectedMetricConfig.unit}</span>
+                  <span>{chartData.count > 0 ? chartData.domainMax.toFixed(selectedMetricConfig.digits) : '--'} {selectedMetricConfig.unit}</span>
+                  <span>{chartData.count > 0 ? chartData.midValue.toFixed(selectedMetricConfig.digits) : '--'} {selectedMetricConfig.unit}</span>
+                  <span>{chartData.count > 0 ? chartData.domainMin.toFixed(selectedMetricConfig.digits) : '--'} {selectedMetricConfig.unit}</span>
                 </div>
-                <div className="line-chart-frame">
-                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Gráfico temporal">
-                    <defs>
-                      <linearGradient id="agroChartFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#0f5238" stopOpacity="0.24" />
-                        <stop offset="100%" stopColor="#0f5238" stopOpacity="0.02" />
-                      </linearGradient>
-                    </defs>
-                    <polygon points={chartData.area} fill="url(#agroChartFill)" />
-                    <polyline points={chartData.points} />
-                  </svg>
+                <div className="chart-plot">
+                  <div className="line-chart-frame" onMouseLeave={() => setHoverPoint(null)} onMouseMove={handleChartHover}>
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Gráfico temporal">
+                      {chartData.count > 1 && <polygon className="chart-area" points={chartData.area} />}
+                      {chartData.count > 1 && <polyline className="chart-line" points={chartData.points} />}
+                    </svg>
+                    {hoverPoint && (
+                      <>
+                        <span className="chart-hover-line" style={{ left: `${hoverPoint.x}%` }} />
+                        <span className="chart-hover-dot" style={{ left: `${hoverPoint.x}%`, top: `${hoverPoint.y}%` }} />
+                        <span className="chart-tooltip" style={{ left: `${hoverPoint.x}%`, top: `${hoverPoint.y}%` }}>
+                          <b>{formatNumber(hoverPoint.value, selectedMetricConfig.digits)} {selectedMetricConfig.unit}</b>
+                          <small>{formatDateTime(hoverPoint.measuredAt)}</small>
+                        </span>
+                      </>
+                    )}
+                    {chartData.latestPoint && (
+                      <span
+                        className="chart-last-dot"
+                        style={{ left: `${chartData.latestPoint.x}%`, top: `${chartData.latestPoint.y}%` }}
+                      />
+                    )}
+                    {chartData.count === 0 && <span className="chart-empty">Sin datos para graficar</span>}
+                  </div>
+                  <div className="x-axis" aria-hidden="true">
+                    {chartData.xTicks.map((tick, index) => <span key={`${tick}-${index}`}>{tick}</span>)}
+                  </div>
                 </div>
               </div>
               <div className="chart-meta">
-                <span>Mín. real {chartData.minValue.toFixed(selectedMetricConfig.digits)} {selectedMetricConfig.unit}</span>
-                <span>Máx. real {chartData.maxValue.toFixed(selectedMetricConfig.digits)} {selectedMetricConfig.unit}</span>
+                <span>Mín. real {chartData.count > 0 ? chartData.minValue.toFixed(selectedMetricConfig.digits) : '--'} {selectedMetricConfig.unit}</span>
+                <span>Máx. real {chartData.count > 0 ? chartData.maxValue.toFixed(selectedMetricConfig.digits) : '--'} {selectedMetricConfig.unit}</span>
                 <span>Escala Y ajustada para evitar sobreamplificación</span>
               </div>
             </article>
@@ -485,10 +548,10 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
       </main>
 
       <nav className="mobile-nav" aria-label="Navegación móvil">
-        <a href="#dashboard"><span className="material-symbols-outlined">dashboard</span>Dashboard</a>
-        <a href="#sensores"><span className="material-symbols-outlined">sensors</span>Sensores</a>
-        <a href="#analisis"><span className="material-symbols-outlined">trending_up</span>Análisis</a>
-        <a href="#datos"><span className="material-symbols-outlined">description</span>Datos</a>
+        <a href="#dashboard"><Icon name="dashboard" />Dashboard</a>
+        <a href="#sensores"><Icon name="sensors" />Sensores</a>
+        <a href="#analisis"><Icon name="trending_up" />Análisis</a>
+        <a href="#datos"><Icon name="description" />Datos</a>
       </nav>
     </div>
   );
