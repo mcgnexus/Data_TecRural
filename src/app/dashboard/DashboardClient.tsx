@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Node, SensorReading } from '@/types';
 import Icon from './Icons';
@@ -252,7 +253,7 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
     <div className="agro-app">
       <aside className="agro-sidebar">
         <div className="sidebar-brand">
-          <h1>AgroMonitor Pro</h1>
+          <Link href="/" className="dashboard-brand-link">Data Tec Rural</Link>
           <div className="station-card">
             <div className="station-avatar">TR</div>
             <div>
@@ -263,10 +264,10 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
         </div>
 
         <nav className="sidebar-nav" aria-label="Navegación">
+          <Link href="/"><Icon name="description" />Endpoints</Link>
+          <Link href="/nodes"><Icon name="sensors" />Nodes</Link>
+          <Link href="/analytics"><Icon name="trending_up" />Analytics</Link>
           <a className="active" href="#dashboard"><Icon name="dashboard" />Dashboard</a>
-          <a href="#sensores"><Icon name="sensors" />Sensores</a>
-          <a href="#analisis"><Icon name="trending_up" />Análisis</a>
-          <a href="#datos"><Icon name="description" />Datos</a>
         </nav>
 
         <button className="export-button" type="button" onClick={exportCsv}>Exportar Datos</button>
@@ -548,10 +549,10 @@ export default function DashboardClient({ nodes, readings, filters }: DashboardC
       </main>
 
       <nav className="mobile-nav" aria-label="Navegación móvil">
+        <Link href="/"><Icon name="description" />Endpoints</Link>
+        <Link href="/nodes"><Icon name="sensors" />Nodes</Link>
+        <Link href="/analytics"><Icon name="trending_up" />Analytics</Link>
         <a href="#dashboard"><Icon name="dashboard" />Dashboard</a>
-        <a href="#sensores"><Icon name="sensors" />Sensores</a>
-        <a href="#analisis"><Icon name="trending_up" />Análisis</a>
-        <a href="#datos"><Icon name="description" />Datos</a>
       </nav>
     </div>
   );
